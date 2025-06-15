@@ -1,0 +1,12 @@
+[package]
+name = "iyanls"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+chrono = "0.4.41"
+clap = { version = "4", features = ["derive"] }
+owo-colors = "4.2.1"
+strum = { version = "0.27", features = ["derive"] }
+strum_macros = "0.27"
+tabled = "0.20.0"
