@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 use clap::Parser;
 use owo_colors::OwoColorize;
+use serde::Serialize;
 use std::{fs, path::PathBuf, process::exit};
 use strum::Display;
 use tabled::{
@@ -29,15 +30,17 @@ struct Args {
         help = "Filter files by pattern (like grep - matches filenames containing the pattern)"
     )]
     grab: Option<String>,
+    #[arg(short, long, help = "Format output to JSON")]
+    json: bool,
 }
 
-#[derive(Debug, Display)]
+#[derive(Debug, Display, Serialize)]
 enum EntryType {
     File,
     Dir,
 }
 
-#[derive(Debug, Tabled)]
+#[derive(Debug, Tabled, Serialize)]
 struct FileEntry {
     #[tabled(rename = "Name")]
     name: String,
@@ -57,27 +60,14 @@ fn main() {
 
     if let Ok(exists) = fs::exists(&path) {
         if exists {
-            let pattern = args.grab;
-            let get_files = get_file(&path, &pattern);
-
-            if get_files.is_empty() {
-                if pattern.is_some() {
-                    println!("{}", "No files found matching the pattern.".red());
-                    exit(1);
-                } else {
-                    println!("{}", "Directory is empty.".yellow());
-                }
-                return;
+            if args.json {
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&get_file(&path, &args.grab)).unwrap()
+                );
+            } else {
+                print_table(&path, &args.grab);
             }
-
-            let mut table = Table::new(get_files);
-            table.with(Style::rounded());
-            table.modify(Columns::first(), Color::FG_BRIGHT_CYAN);
-            table.modify(Columns::one(2), Color::FG_BRIGHT_MAGENTA);
-            table.modify(Columns::one(3), Color::FG_BRIGHT_MAGENTA);
-            table.modify(Columns::one(4), Color::FG_BRIGHT_YELLOW);
-            table.modify(Rows::first(), Color::FG_BRIGHT_GREEN);
-            println!("{}", table);
         } else {
             eprintln!("{}", "Path does not exist.".red());
             exit(1);
@@ -85,6 +75,26 @@ fn main() {
     } else {
         eprintln!("{}", "Error checking path.".red());
         exit(1);
+    }
+}
+
+fn print_table(path: &PathBuf, pattern: &Option<String>) {
+    let files = get_file(path, pattern);
+    if files.is_empty() {
+        if pattern.is_some() {
+            println!("{}", "No files found matching the pattern.".red());
+        } else {
+            println!("{}", "Directory is empty.".yellow());
+        }
+    } else {
+        let mut table = Table::new(files);
+        table.with(Style::rounded());
+        table.modify(Columns::first(), Color::FG_BRIGHT_CYAN);
+        table.modify(Columns::one(2), Color::FG_BRIGHT_MAGENTA);
+        table.modify(Columns::one(3), Color::FG_BRIGHT_MAGENTA);
+        table.modify(Columns::one(4), Color::FG_BRIGHT_YELLOW);
+        table.modify(Rows::first(), Color::FG_BRIGHT_GREEN);
+        println!("{}", table);
     }
 }
 
