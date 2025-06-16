@@ -32,6 +32,8 @@ struct Args {
     grab: Option<String>,
     #[arg(short, long, help = "Format output to JSON")]
     json: bool,
+    #[arg(alias = "jsx", long, help = "Export JSON output to a file")]
+    json_export: Option<PathBuf>,
 }
 
 #[derive(Debug, Display, Serialize)]
@@ -60,13 +62,18 @@ fn main() {
 
     if let Ok(exists) = fs::exists(&path) {
         if exists {
+            let files = get_file(&path, &args.grab);
             if args.json {
-                println!(
-                    "{}",
-                    serde_json::to_string_pretty(&get_file(&path, &args.grab)).unwrap()
-                );
+                println!("{}", serde_json::to_string_pretty(&files).unwrap());
             } else {
-                print_table(&path, &args.grab);
+                print_table_from_files(&files, &args.grab);
+            }
+            if let Some(export_path) = &args.json_export {
+                if let Err(e) = export_json(&files, export_path) {
+                    eprintln!("{}: {}", "Error writing JSON file".red(), e);
+                    exit(1);
+                }
+                println!("{} {}", "JSON exported to:".green(), export_path.display());
             }
         } else {
             eprintln!("{}", "Path does not exist.".red());
@@ -78,8 +85,16 @@ fn main() {
     }
 }
 
-fn print_table(path: &PathBuf, pattern: &Option<String>) {
-    let files = get_file(path, pattern);
+fn export_json(
+    files: &[FileEntry],
+    export_path: &PathBuf,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let json_content = serde_json::to_string_pretty(files)?;
+    fs::write(export_path, json_content)?;
+    Ok(())
+}
+
+fn print_table_from_files(files: &[FileEntry], pattern: &Option<String>) {
     if files.is_empty() {
         if pattern.is_some() {
             println!("{}", "No files found matching the pattern.".red());
