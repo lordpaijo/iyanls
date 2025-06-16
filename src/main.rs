@@ -62,7 +62,8 @@ fn main() {
 
             if get_files.is_empty() {
                 if pattern.is_some() {
-                    println!("{}", "No files found matching the pattern.".yellow());
+                    println!("{}", "No files found matching the pattern.".red());
+                    exit(1);
                 } else {
                     println!("{}", "Directory is empty.".yellow());
                 }
