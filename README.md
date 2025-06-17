@@ -3,7 +3,7 @@ My custom build of `ls` in Rust.
 
 (Inspired and based on: [https://youtu.be/5UA9UWWAagc?si=nceQeo-33Cpjpb-e](https://youtu.be/5UA9UWWAagc?si=nceQeo-33Cpjpb-e))
 
-![](https://github.com/lordpaijo/iyanls/blob/main/Screenshot_20250616_204013.png)
+![](https://github.com/lordpaijo/iyanls/blob/main/Screenshot_20250617_180215.png)
 ## Features
 - Tabled and colorful output
 - File type (directory / file)
