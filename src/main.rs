@@ -34,6 +34,8 @@ struct Args {
     json: bool,
     #[arg(alias = "jsx", long, help = "Export JSON output to a file")]
     json_export: Option<PathBuf>,
+    #[arg(short = 'n', long, help = "Hide line numbers")]
+    no_line_numbers: bool,
 }
 
 #[derive(Debug, Display, Serialize)]
@@ -44,6 +46,9 @@ enum EntryType {
 
 #[derive(Debug, Tabled, Serialize)]
 struct FileEntry {
+    #[tabled(rename = "#")]
+    #[serde(skip_serializing_if = "String::is_empty")]
+    line_number: String,
     #[tabled(rename = "Name")]
     name: String,
     #[tabled(rename = "Type")]
@@ -62,7 +67,7 @@ fn main() {
 
     if let Ok(exists) = fs::exists(&path) {
         if exists {
-            let files = get_file(&path, &args.grab);
+            let files = get_file(&path, &args.grab, !args.no_line_numbers);
             if args.json {
                 println!("{}", serde_json::to_string_pretty(&files).unwrap());
             } else {
@@ -98,28 +103,49 @@ fn print_table_from_files(files: &[FileEntry], pattern: &Option<String>) {
     if files.is_empty() {
         if pattern.is_some() {
             println!("{}", "No files found matching the pattern.".red());
+            exit(1);
         } else {
             println!("{}", "Directory is empty.".yellow());
         }
     } else {
         let mut table = Table::new(files);
         table.with(Style::rounded());
-        table.modify(Columns::first(), Color::FG_BRIGHT_CYAN);
-        table.modify(Columns::one(2), Color::FG_BRIGHT_MAGENTA);
-        table.modify(Columns::one(3), Color::FG_BRIGHT_MAGENTA);
-        table.modify(Columns::one(4), Color::FG_BRIGHT_YELLOW);
+
+        let has_line_numbers = files.first().map_or(false, |f| !f.line_number.is_empty());
+        if has_line_numbers {
+            table.modify(Columns::first(), Color::FG_BRIGHT_WHITE);
+            table.modify(Columns::one(1), Color::FG_BRIGHT_CYAN);
+            table.modify(Columns::one(2), Color::FG_BRIGHT_MAGENTA);
+            table.modify(Columns::one(3), Color::FG_BRIGHT_MAGENTA);
+            table.modify(Columns::one(4), Color::FG_BRIGHT_YELLOW);
+        } else {
+            table.modify(Columns::one(1), Color::FG_BRIGHT_CYAN);
+            table.modify(Columns::one(2), Color::FG_BRIGHT_MAGENTA);
+            table.modify(Columns::one(3), Color::FG_BRIGHT_MAGENTA);
+            table.modify(Columns::one(4), Color::FG_BRIGHT_YELLOW);
+        }
         table.modify(Rows::first(), Color::FG_BRIGHT_GREEN);
         println!("{}", table);
     }
 }
 
-fn get_file(path: &PathBuf, pattern: &Option<String>) -> Vec<FileEntry> {
+fn get_file(path: &PathBuf, pattern: &Option<String>, show_line_numbers: bool) -> Vec<FileEntry> {
     let mut data = Vec::default();
     if let Ok(read_dir) = fs::read_dir(path) {
+        let mut line_number = 1;
         for entry in read_dir {
             if let Ok(file) = entry {
                 if should_include_file(&file, pattern) {
-                    map_data(file, &mut data);
+                    map_data(
+                        file,
+                        &mut data,
+                        if show_line_numbers {
+                            line_number.to_string()
+                        } else {
+                            String::new()
+                        },
+                    );
+                    line_number += 1;
                 }
             }
         }
@@ -135,9 +161,10 @@ fn should_include_file(file: &fs::DirEntry, pattern: &Option<String>) -> bool {
     filename.contains(&search_pattern.to_lowercase())
 }
 
-fn map_data(file: fs::DirEntry, data: &mut Vec<FileEntry>) {
+fn map_data(file: fs::DirEntry, data: &mut Vec<FileEntry>, line_number: String) {
     if let Ok(meta) = fs::metadata(file.path()) {
         data.push(FileEntry {
+            line_number,
             name: file
                 .file_name()
                 .into_string()
