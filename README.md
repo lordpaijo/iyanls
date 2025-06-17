@@ -38,4 +38,26 @@ Make sure to add the `target/release` directory to your PATH environment variabl
 $ iyanls [path] [options]
 ```
 
+Examples:
+- List files in the current directory:
+  ```sh
+  $ iyanls
+  ```
+- List files in a specific directory:
+  ```sh
+  $ iyanls /path/to/directory
+  ```
+- List files with deep processing:
+  ```sh
+  $ iyanls -d /path/to/directory
+  ```
+- List files with JSON formatting:
+  ```sh
+  $ iyanls --json /path/to/directory
+  ```
+    - List files that match a string:
+  ```sh
+  $ iyanls -g string /path/to/directory
+  ```
+
 See `iyanls --help` for more information.

@@ -1,8 +1,10 @@
-use chrono::{DateTime, Local, Utc};
+use chrono::{DateTime, Utc};
 use chrono_tz::{Tz, UTC};
 use clap::{Parser, ValueEnum};
 use owo_colors::OwoColorize;
+use rayon::prelude::*;
 use serde::Serialize;
+use std::os::unix::io::AsRawFd;
 use std::{fs, path::PathBuf, process::exit};
 use strum::Display;
 use tabled::{
@@ -36,6 +38,8 @@ enum TimeFormat {
 )]
 struct Args {
     path: Option<PathBuf>,
+    #[arg(short, long, help = "Toggle deep processing", default_value = "false")]
+    deep: bool,
     #[arg(
         short,
         long,
@@ -70,6 +74,8 @@ struct Args {
         default_value = "UTC"
     )]
     timezone: String,
+    #[arg(long, help = "Toggle clock display", default_value = "false")]
+    toggle_clock: bool,
 }
 
 #[derive(Debug, Display, Serialize)]
@@ -89,7 +95,6 @@ struct FileEntry {
     modified: String,
 }
 
-// Table row with line numbers
 #[derive(Debug, Tabled)]
 struct TableRowWithLine {
     #[tabled(rename = "#")]
@@ -106,7 +111,6 @@ struct TableRowWithLine {
     modified: String,
 }
 
-// Table row without line numbers
 #[derive(Debug, Tabled)]
 struct TableRowNoLine {
     #[tabled(rename = "Name")]
@@ -122,6 +126,9 @@ struct TableRowNoLine {
 }
 
 fn main() {
+    #[cfg(unix)]
+    let tty_available = unsafe { libc::isatty(std::io::stdout().as_raw_fd()) == 1 };
+
     let args = Args::parse();
     let path = args.path.unwrap_or(PathBuf::from("."));
     let timezone = match args.timezone.parse::<Tz>() {
@@ -143,9 +150,16 @@ fn main() {
                 !args.no_line_numbers,
                 args.octal_perms,
                 &args.time_format,
-                &args.custom_format,
                 &timezone,
+                args.deep,
+                args.toggle_clock,
             );
+            if !tty_available {
+                for file in &files {
+                    println!("{}", file.name);
+                }
+                exit(0);
+            }
             if args.json {
                 println!("{}", serde_json::to_string_pretty(&files).unwrap());
             } else {
@@ -178,10 +192,7 @@ fn export_json(
 }
 
 fn format_size(size: u64) -> String {
-    const UNITS: &[&str] = &[
-        "B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB", "BB", "NB", "DB", "CB", "QB", "RB",
-        "OB",
-    ];
+    const UNITS: &[&str] = &["B", "KB", "MB", "GB", "TB", "PB"];
     const THRESHOLD: f64 = 1000.0;
 
     if size == 0 {
@@ -208,34 +219,69 @@ fn format_size(size: u64) -> String {
     }
 }
 
+fn get_dir_size(path: &PathBuf) -> u64 {
+    if let Ok(entries) = fs::read_dir(path) {
+        entries
+            .filter_map(Result::ok)
+            .par_bridge()
+            .map(|entry| {
+                let meta = entry.metadata();
+                if let Ok(m) = meta {
+                    if m.is_dir() {
+                        get_dir_size(&entry.path())
+                    } else {
+                        m.len()
+                    }
+                } else {
+                    0
+                }
+            })
+            .sum()
+    } else {
+        0
+    }
+}
+
 fn format_datetime(
     system_time: std::time::SystemTime,
     time_format: &TimeFormat,
-    custom_format: &str,
     timezone: &Tz,
+    toggle_clock: bool,
 ) -> String {
     let datetime_utc: DateTime<Utc> = system_time.into();
 
     match time_format {
         TimeFormat::Utc => {
-            format!("{}", datetime_utc.format("%a %b %e %Y %H:%M:%S"))
+            if toggle_clock {
+                format!("{}", datetime_utc.format("%a %b %e %Y %H:%M:%S"))
+            } else {
+                format!("{}", datetime_utc.format("%a %b %e %Y"))
+            }
         }
         TimeFormat::Unix => datetime_utc.timestamp().to_string(),
         TimeFormat::Iso8601 => {
-            format!("{}", datetime_utc.format("%Y-%m-%dT%H:%M:%S%.3fZ"))
+            if toggle_clock {
+                format!("{}", datetime_utc.format("%a-%b-%eT%H:%M:%SZ"))
+            } else {
+                format!("{}", datetime_utc.format("%a %b %e %Y"))
+            }
         }
         TimeFormat::Rfc3339 => datetime_utc.to_rfc3339(),
-        TimeFormat::Utf => {
+        TimeFormat::Utf | TimeFormat::Custom => {
             let tz_time = datetime_utc.with_timezone(timezone);
-            format!("{}", tz_time.format("%Y-%m-%d %H:%M:%S"))
-        }
-        TimeFormat::Custom => {
-            let tz_time = datetime_utc.with_timezone(timezone);
-            format!("{}", tz_time.format(custom_format))
+            if toggle_clock {
+                format!("{}", tz_time.format("%a %b %e %Y %H:%M:%S"))
+            } else {
+                format!("{}", tz_time.format("%a %b %e %Y"))
+            }
         }
         _ => {
-            let local_time = datetime_utc.with_timezone(&Local);
-            format!("{}", local_time.format("%a %b %e %Y %H:%M:%S"))
+            let tz_time = datetime_utc.with_timezone(timezone);
+            if toggle_clock {
+                format!("{}", tz_time.format("%a %b %e %Y %H:%M:%S"))
+            } else {
+                format!("{}", tz_time.format("%a %b %e %Y"))
+            }
         }
     }
 }
@@ -305,8 +351,9 @@ fn get_file(
     show_line_numbers: bool,
     octal_perms: bool,
     time_format: &TimeFormat,
-    custom_format: &str,
     timezone: &Tz,
+    deep: bool,
+    toggle_clock: bool,
 ) -> Vec<FileEntry> {
     let mut data = Vec::default();
     if let Ok(read_dir) = fs::read_dir(path) {
@@ -324,8 +371,9 @@ fn get_file(
                         },
                         octal_perms,
                         time_format,
-                        custom_format,
                         timezone,
+                        deep,
+                        toggle_clock,
                     );
                     line_number += 1;
                 }
@@ -349,13 +397,18 @@ fn map_data(
     line_number: String,
     octal_perms: bool,
     time_format: &TimeFormat,
-    custom_format: &str,
     timezone: &Tz,
+    deep: bool,
+    toggle_clock: bool,
 ) {
     if let Ok(meta) = fs::metadata(file.path()) {
-        let file_size = meta.len();
+        let file_size = if meta.is_dir() && deep {
+            get_dir_size(&file.path())
+        } else {
+            meta.len()
+        };
         let modified_date = if let Ok(modi) = meta.modified() {
-            format_datetime(modi, time_format, custom_format, timezone)
+            format_datetime(modi, time_format, timezone, toggle_clock)
         } else {
             String::default()
         };
