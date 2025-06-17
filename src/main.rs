@@ -178,7 +178,10 @@ fn export_json(
 }
 
 fn format_size(size: u64) -> String {
-    const UNITS: &[&str] = &["B", "KB", "MB", "GB", "TB", "PB"];
+    const UNITS: &[&str] = &[
+        "B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB", "BB", "NB", "DB", "CB", "QB", "RB",
+        "OB",
+    ];
     const THRESHOLD: f64 = 1000.0;
 
     if size == 0 {
