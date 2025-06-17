@@ -3,7 +3,6 @@ My custom build of `ls` in Rust.
 
 (Inspired and based on: [https://youtu.be/5UA9UWWAagc?si=nceQeo-33Cpjpb-e](https://youtu.be/5UA9UWWAagc?si=nceQeo-33Cpjpb-e))
 
-![](https://github.com/lordpaijo/iyanls/blob/main/Screenshot_20250617_180215.png)
 ## Features
 - Tabled and colorful output
 - File type (directory / file)
@@ -37,5 +36,27 @@ Make sure to add the `target/release` directory to your PATH environment variabl
 ```sh
 $ iyanls [path] [options]
 ```
+
+Examples:
+- List files in the current directory:
+  ```sh
+  $ iyanls
+  ```
+- List files in a specific directory:
+  ```sh
+  $ iyanls /path/to/directory
+  ```
+- List files with deep processing:
+  ```sh
+  $ iyanls -d /path/to/directory
+  ```
+- List files with JSON formatting:
+  ```sh
+  $ iyanls --json /path/to/directory
+  ```
+    - List files that match a string:
+  ```sh
+  $ iyanls -g string /path/to/directory
+  ```
 
 See `iyanls --help` for more information.
