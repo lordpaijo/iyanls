@@ -1,5 +1,6 @@
-use chrono::{DateTime, Utc};
-use clap::Parser;
+use chrono::{DateTime, Local, Utc};
+use chrono_tz::{Tz, UTC};
+use clap::{Parser, ValueEnum};
 use owo_colors::OwoColorize;
 use serde::Serialize;
 use std::{fs, path::PathBuf, process::exit};
@@ -14,6 +15,17 @@ use tabled::{
 
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
+
+#[derive(Debug, Clone, ValueEnum)]
+enum TimeFormat {
+    Utc,
+    Local,
+    Unix,
+    Iso8601,
+    Rfc3339,
+    Utf,
+    Custom,
+}
 
 #[derive(Debug, Parser)]
 #[command(
@@ -38,8 +50,26 @@ struct Args {
     no_line_numbers: bool,
     #[arg(short = 'o', long, help = "Show permissions in octal format")]
     octal_perms: bool,
-    #[arg(short = 'r', long, help = "Show raw file sizes in bytes only")]
-    raw_size: bool,
+    #[arg(
+        short = 't',
+        long,
+        value_enum,
+        default_value = "local",
+        help = "Time format for dates (utc, local, unix, iso8601, rfc3339, utf, custom)"
+    )]
+    time_format: TimeFormat,
+    #[arg(
+        long,
+        help = "Custom time format string (used with --time-format=custom)",
+        default_value = "%Y-%m-%d %H:%M:%S %Z"
+    )]
+    custom_format: String,
+    #[arg(
+        long,
+        help = "Timezone for time display (e.g., US/Eastern, Europe/London, Asia/Tokyo)",
+        default_value = "UTC"
+    )]
+    timezone: String,
 }
 
 #[derive(Debug, Display, Serialize)]
@@ -48,30 +78,63 @@ enum EntryType {
     Dir,
 }
 
-#[derive(Debug, Tabled, Serialize)]
+#[derive(Debug, Serialize)]
 struct FileEntry {
-    #[tabled(rename = "#")]
     #[serde(skip_serializing_if = "String::is_empty")]
+    line_number: String,
+    name: String,
+    e_type: EntryType,
+    permissions: String,
+    size: String,
+    modified: String,
+}
+
+// Table row with line numbers
+#[derive(Debug, Tabled)]
+struct TableRowWithLine {
+    #[tabled(rename = "#")]
     line_number: String,
     #[tabled(rename = "Name")]
     name: String,
     #[tabled(rename = "Type")]
-    e_type: EntryType,
+    e_type: String,
     #[tabled(rename = "Permissions")]
     permissions: String,
     #[tabled(rename = "Size")]
     size: String,
     #[tabled(rename = "Modified Date")]
     modified: String,
-    #[tabled(skip, rename = "Raw Size")]
-    #[serde(rename = "raw_size")]
-    raw_size: u64,
+}
+
+// Table row without line numbers
+#[derive(Debug, Tabled)]
+struct TableRowNoLine {
+    #[tabled(rename = "Name")]
+    name: String,
+    #[tabled(rename = "Type")]
+    e_type: String,
+    #[tabled(rename = "Permissions")]
+    permissions: String,
+    #[tabled(rename = "Size")]
+    size: String,
+    #[tabled(rename = "Modified Date")]
+    modified: String,
 }
 
 fn main() {
     let args = Args::parse();
     let path = args.path.unwrap_or(PathBuf::from("."));
-
+    let timezone = match args.timezone.parse::<Tz>() {
+        Ok(tz) => tz,
+        Err(_) => {
+            eprintln!(
+                "{}: '{}'. Using UTC instead.",
+                "Invalid timezone".red(),
+                args.timezone
+            );
+            UTC
+        }
+    };
     if let Ok(exists) = fs::exists(&path) {
         if exists {
             let files = get_file(
@@ -79,12 +142,14 @@ fn main() {
                 &args.grab,
                 !args.no_line_numbers,
                 args.octal_perms,
-                args.raw_size,
+                &args.time_format,
+                &args.custom_format,
+                &timezone,
             );
             if args.json {
                 println!("{}", serde_json::to_string_pretty(&files).unwrap());
             } else {
-                print_table_from_files(&files, &args.grab, args.raw_size);
+                print_table_from_files(&files, &args.grab, !args.no_line_numbers);
             }
             if let Some(export_path) = &args.json_export {
                 if let Err(e) = export_json(&files, export_path) {
@@ -140,7 +205,39 @@ fn format_size(size: u64) -> String {
     }
 }
 
-fn print_table_from_files(files: &[FileEntry], pattern: &Option<String>, raw_size: bool) {
+fn format_datetime(
+    system_time: std::time::SystemTime,
+    time_format: &TimeFormat,
+    custom_format: &str,
+    timezone: &Tz,
+) -> String {
+    let datetime_utc: DateTime<Utc> = system_time.into();
+
+    match time_format {
+        TimeFormat::Utc => {
+            format!("{}", datetime_utc.format("%a %b %e %Y %H:%M:%S"))
+        }
+        TimeFormat::Unix => datetime_utc.timestamp().to_string(),
+        TimeFormat::Iso8601 => {
+            format!("{}", datetime_utc.format("%Y-%m-%dT%H:%M:%S%.3fZ"))
+        }
+        TimeFormat::Rfc3339 => datetime_utc.to_rfc3339(),
+        TimeFormat::Utf => {
+            let tz_time = datetime_utc.with_timezone(timezone);
+            format!("{}", tz_time.format("%Y-%m-%d %H:%M:%S"))
+        }
+        TimeFormat::Custom => {
+            let tz_time = datetime_utc.with_timezone(timezone);
+            format!("{}", tz_time.format(custom_format))
+        }
+        _ => {
+            let local_time = datetime_utc.with_timezone(&Local);
+            format!("{}", local_time.format("%a %b %e %Y %H:%M:%S"))
+        }
+    }
+}
+
+fn print_table_from_files(files: &[FileEntry], pattern: &Option<String>, show_line_numbers: bool) {
     if files.is_empty() {
         if pattern.is_some() {
             println!("{}", "No files found matching the pattern.".red());
@@ -149,32 +246,54 @@ fn print_table_from_files(files: &[FileEntry], pattern: &Option<String>, raw_siz
             println!("{}", "Directory is empty.".yellow());
         }
     } else {
-        let mut table = Table::new(files);
-        table.with(Style::rounded());
-
-        let has_line_numbers = files.first().map_or(false, |f| !f.line_number.is_empty());
-
-        if has_line_numbers {
-            table.modify(Columns::first(), Color::FG_BRIGHT_WHITE);
-            table.modify(Columns::one(1), Color::FG_BRIGHT_CYAN);
-            table.modify(Columns::one(2), Color::FG_BRIGHT_MAGENTA);
-            table.modify(Columns::one(3), Color::FG_BRIGHT_MAGENTA);
-            table.modify(Columns::one(4), Color::FG_BRIGHT_YELLOW);
-            if raw_size {
-                table.modify(Columns::one(6), Color::FG_BRIGHT_YELLOW);
-            }
+        if show_line_numbers {
+            let table_rows: Vec<TableRowWithLine> = files
+                .iter()
+                .map(|file| TableRowWithLine {
+                    line_number: file.line_number.clone(),
+                    name: file.name.clone(),
+                    e_type: file.e_type.to_string(),
+                    permissions: file.permissions.clone(),
+                    size: file.size.clone(),
+                    modified: file.modified.clone(),
+                })
+                .collect();
+            print_styled_table(Table::new(&table_rows), true);
         } else {
-            table.modify(Columns::one(0), Color::FG_BRIGHT_CYAN);
-            table.modify(Columns::one(1), Color::FG_BRIGHT_MAGENTA);
-            table.modify(Columns::one(2), Color::FG_BRIGHT_MAGENTA);
-            table.modify(Columns::one(3), Color::FG_BRIGHT_YELLOW);
-            if raw_size {
-                table.modify(Columns::one(5), Color::FG_BRIGHT_YELLOW);
-            }
+            let table_rows: Vec<TableRowNoLine> = files
+                .iter()
+                .map(|file| TableRowNoLine {
+                    name: file.name.clone(),
+                    e_type: file.e_type.to_string(),
+                    permissions: file.permissions.clone(),
+                    size: file.size.clone(),
+                    modified: file.modified.clone(),
+                })
+                .collect();
+            print_styled_table(Table::new(&table_rows), false);
         }
-        table.modify(Rows::first(), Color::FG_BRIGHT_GREEN);
-        println!("{}", table);
     }
+}
+
+fn print_styled_table(mut table: Table, has_line_numbers: bool) {
+    table.with(Style::rounded());
+    let mut col_index = 0;
+    if has_line_numbers {
+        table.modify(Columns::one(col_index), Color::FG_BRIGHT_WHITE);
+        col_index += 1;
+    }
+    table.modify(Columns::one(col_index), Color::FG_BRIGHT_CYAN); // Name
+    col_index += 1;
+    table.modify(Columns::one(col_index), Color::FG_BRIGHT_MAGENTA); // Type
+    col_index += 1;
+    table.modify(Columns::one(col_index), Color::FG_BRIGHT_MAGENTA); // Permissions
+    col_index += 1;
+    table.modify(Columns::one(col_index), Color::FG_BRIGHT_YELLOW); // Size
+    col_index += 1;
+    table.modify(Columns::one(col_index), Color::FG_BRIGHT_GREEN); // Modified Date
+
+    table.modify(Rows::first(), Color::FG_BRIGHT_GREEN);
+    println!("{}", table);
 }
 
 fn get_file(
@@ -182,7 +301,9 @@ fn get_file(
     pattern: &Option<String>,
     show_line_numbers: bool,
     octal_perms: bool,
-    raw_size: bool,
+    time_format: &TimeFormat,
+    custom_format: &str,
+    timezone: &Tz,
 ) -> Vec<FileEntry> {
     let mut data = Vec::default();
     if let Ok(read_dir) = fs::read_dir(path) {
@@ -199,7 +320,9 @@ fn get_file(
                             String::new()
                         },
                         octal_perms,
-                        raw_size,
+                        time_format,
+                        custom_format,
+                        timezone,
                     );
                     line_number += 1;
                 }
@@ -222,16 +345,27 @@ fn map_data(
     data: &mut Vec<FileEntry>,
     line_number: String,
     octal_perms: bool,
-    raw_size: bool,
+    time_format: &TimeFormat,
+    custom_format: &str,
+    timezone: &Tz,
 ) {
     if let Ok(meta) = fs::metadata(file.path()) {
         let file_size = meta.len();
+        let modified_date = if let Ok(modi) = meta.modified() {
+            format_datetime(modi, time_format, custom_format, timezone)
+        } else {
+            String::default()
+        };
+        let mut filename = file
+            .file_name()
+            .into_string()
+            .unwrap_or("Unknown name.".into());
+        if meta.is_dir() {
+            filename.push('/');
+        }
         data.push(FileEntry {
             line_number,
-            name: file
-                .file_name()
-                .into_string()
-                .unwrap_or("Unknown name.".into()),
+            name: filename,
             e_type: if meta.is_dir() {
                 EntryType::Dir
             } else {
@@ -242,18 +376,8 @@ fn map_data(
             } else {
                 format_permissions_rwx(&meta)
             },
-            size: if raw_size {
-                file_size.to_string()
-            } else {
-                format_size(file_size)
-            },
-            raw_size: file_size,
-            modified: if let Ok(modi) = meta.modified() {
-                let date: DateTime<Utc> = modi.into();
-                format!("{}", date.format("%a %b %e %Y"))
-            } else {
-                String::default()
-            },
+            size: format_size(file_size),
+            modified: modified_date,
         });
     }
 }
@@ -292,7 +416,6 @@ fn format_permissions_octal(metadata: &fs::Metadata) -> String {
 #[cfg(windows)]
 fn format_permissions_rwx(metadata: &fs::Metadata) -> String {
     let permissions = metadata.permissions();
-
     if permissions.readonly() {
         "r--r--r--".to_string()
     } else {
@@ -303,7 +426,6 @@ fn format_permissions_rwx(metadata: &fs::Metadata) -> String {
 #[cfg(windows)]
 fn format_permissions_octal(metadata: &fs::Metadata) -> String {
     let permissions = metadata.permissions();
-
     if permissions.readonly() {
         "444".to_string()
     } else {
