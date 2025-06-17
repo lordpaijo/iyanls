@@ -3,11 +3,11 @@ My custom build of `ls` in Rust.
 
 (Inspired and based on: [https://youtu.be/5UA9UWWAagc?si=nceQeo-33Cpjpb-e](https://youtu.be/5UA9UWWAagc?si=nceQeo-33Cpjpb-e))
 ## Features
-- A tabled and colorful output
+- Tabled and colorful output
 - File type (directory / file)
-- File Permissions
-- File Size
-- Modification Time
+- File Permissions (Normal / Octal)
+- File Size (B to OB)
+- Modification Time with toggling
 - Grabbing files by strings
 - JSON formatting
 
@@ -16,19 +16,24 @@ My custom build of `ls` in Rust.
 - Cargo (>= 1.65.0)
 
 ## Installation
-```
-cargo install iyanls
+```sh
+$ cargo install iyanls
 ```
 
-Or use the executable files from [assets](https://github.com/lordpaijo/iyanls/releases)
+Or use the executable files from [assets](https://github.com/lordpaijo/iyanls/releases).
+
+## Build from source
+```sh
+$ git clone https://github.com/lordpaijo/iyanls.git
+$ cd iyanls
+$ cargo build --release
+```
+
+Make sure to add the `target/release` directory to your PATH environment variable.
 
 ## Usage
+```sh
+$ iyanls [path] [options]
 ```
-iyanls [path] [options]
-```
-Options:
-- `-h` `--help`: Print help page
-- `-V` `--version`: Print version
-- `-g` `--grab`: Grab files that match a string
-- `-j` `--json`: Output in JSON format
-- `--json-export`: Export JSON data as a file
+
+See `iyanls --help` for more information.
