@@ -4,7 +4,10 @@ use clap::{Parser, ValueEnum};
 use owo_colors::OwoColorize;
 use rayon::prelude::*;
 use serde::Serialize;
+
+#[cfg(unix)]
 use std::os::unix::io::AsRawFd;
+
 use std::{fs, path::PathBuf, process::exit};
 use strum::Display;
 use tabled::{
