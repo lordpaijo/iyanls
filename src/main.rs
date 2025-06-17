@@ -36,6 +36,10 @@ struct Args {
     json_export: Option<PathBuf>,
     #[arg(short = 'n', long, help = "Hide line numbers")]
     no_line_numbers: bool,
+    #[arg(short = 'o', long, help = "Show permissions in octal format")]
+    octal_perms: bool,
+    #[arg(short = 'r', long, help = "Show raw file sizes in bytes only")]
+    raw_size: bool,
 }
 
 #[derive(Debug, Display, Serialize)]
@@ -55,10 +59,13 @@ struct FileEntry {
     e_type: EntryType,
     #[tabled(rename = "Permissions")]
     permissions: String,
-    #[tabled(rename = "Size (b)")]
-    size: u64,
+    #[tabled(rename = "Size")]
+    size: String,
     #[tabled(rename = "Modified Date")]
     modified: String,
+    #[tabled(skip, rename = "Raw Size")]
+    #[serde(rename = "raw_size")]
+    raw_size: u64,
 }
 
 fn main() {
@@ -67,11 +74,17 @@ fn main() {
 
     if let Ok(exists) = fs::exists(&path) {
         if exists {
-            let files = get_file(&path, &args.grab, !args.no_line_numbers);
+            let files = get_file(
+                &path,
+                &args.grab,
+                !args.no_line_numbers,
+                args.octal_perms,
+                args.raw_size,
+            );
             if args.json {
                 println!("{}", serde_json::to_string_pretty(&files).unwrap());
             } else {
-                print_table_from_files(&files, &args.grab);
+                print_table_from_files(&files, &args.grab, args.raw_size);
             }
             if let Some(export_path) = &args.json_export {
                 if let Err(e) = export_json(&files, export_path) {
@@ -99,7 +112,35 @@ fn export_json(
     Ok(())
 }
 
-fn print_table_from_files(files: &[FileEntry], pattern: &Option<String>) {
+fn format_size(size: u64) -> String {
+    const UNITS: &[&str] = &["B", "KB", "MB", "GB", "TB", "PB"];
+    const THRESHOLD: f64 = 1000.0;
+
+    if size == 0 {
+        return "   0 B".to_string();
+    }
+
+    let size_f = size as f64;
+    let unit_index = (size_f.log10() / THRESHOLD.log10()).floor() as usize;
+    let unit_index = unit_index.min(UNITS.len() - 1);
+
+    if unit_index == 0 {
+        format!("{:>4} B", size)
+    } else {
+        let scaled_size = size_f / THRESHOLD.powi(unit_index as i32);
+        let formatted_number = if scaled_size >= 100.0 {
+            format!("{:.0}", scaled_size)
+        } else if scaled_size >= 10.0 {
+            format!("{:.1}", scaled_size)
+        } else {
+            format!("{:.2}", scaled_size)
+        };
+
+        format!("{:>4} {}", formatted_number, UNITS[unit_index])
+    }
+}
+
+fn print_table_from_files(files: &[FileEntry], pattern: &Option<String>, raw_size: bool) {
     if files.is_empty() {
         if pattern.is_some() {
             println!("{}", "No files found matching the pattern.".red());
@@ -112,24 +153,37 @@ fn print_table_from_files(files: &[FileEntry], pattern: &Option<String>) {
         table.with(Style::rounded());
 
         let has_line_numbers = files.first().map_or(false, |f| !f.line_number.is_empty());
+
         if has_line_numbers {
             table.modify(Columns::first(), Color::FG_BRIGHT_WHITE);
             table.modify(Columns::one(1), Color::FG_BRIGHT_CYAN);
             table.modify(Columns::one(2), Color::FG_BRIGHT_MAGENTA);
             table.modify(Columns::one(3), Color::FG_BRIGHT_MAGENTA);
             table.modify(Columns::one(4), Color::FG_BRIGHT_YELLOW);
+            if raw_size {
+                table.modify(Columns::one(6), Color::FG_BRIGHT_YELLOW);
+            }
         } else {
-            table.modify(Columns::one(1), Color::FG_BRIGHT_CYAN);
+            table.modify(Columns::one(0), Color::FG_BRIGHT_CYAN);
+            table.modify(Columns::one(1), Color::FG_BRIGHT_MAGENTA);
             table.modify(Columns::one(2), Color::FG_BRIGHT_MAGENTA);
-            table.modify(Columns::one(3), Color::FG_BRIGHT_MAGENTA);
-            table.modify(Columns::one(4), Color::FG_BRIGHT_YELLOW);
+            table.modify(Columns::one(3), Color::FG_BRIGHT_YELLOW);
+            if raw_size {
+                table.modify(Columns::one(5), Color::FG_BRIGHT_YELLOW);
+            }
         }
         table.modify(Rows::first(), Color::FG_BRIGHT_GREEN);
         println!("{}", table);
     }
 }
 
-fn get_file(path: &PathBuf, pattern: &Option<String>, show_line_numbers: bool) -> Vec<FileEntry> {
+fn get_file(
+    path: &PathBuf,
+    pattern: &Option<String>,
+    show_line_numbers: bool,
+    octal_perms: bool,
+    raw_size: bool,
+) -> Vec<FileEntry> {
     let mut data = Vec::default();
     if let Ok(read_dir) = fs::read_dir(path) {
         let mut line_number = 1;
@@ -144,6 +198,8 @@ fn get_file(path: &PathBuf, pattern: &Option<String>, show_line_numbers: bool) -
                         } else {
                             String::new()
                         },
+                        octal_perms,
+                        raw_size,
                     );
                     line_number += 1;
                 }
@@ -161,8 +217,15 @@ fn should_include_file(file: &fs::DirEntry, pattern: &Option<String>) -> bool {
     filename.contains(&search_pattern.to_lowercase())
 }
 
-fn map_data(file: fs::DirEntry, data: &mut Vec<FileEntry>, line_number: String) {
+fn map_data(
+    file: fs::DirEntry,
+    data: &mut Vec<FileEntry>,
+    line_number: String,
+    octal_perms: bool,
+    raw_size: bool,
+) {
     if let Ok(meta) = fs::metadata(file.path()) {
+        let file_size = meta.len();
         data.push(FileEntry {
             line_number,
             name: file
@@ -174,8 +237,17 @@ fn map_data(file: fs::DirEntry, data: &mut Vec<FileEntry>, line_number: String) 
             } else {
                 EntryType::File
             },
-            permissions: format_permissions(&meta),
-            size: meta.len(),
+            permissions: if octal_perms {
+                format_permissions_octal(&meta)
+            } else {
+                format_permissions_rwx(&meta)
+            },
+            size: if raw_size {
+                file_size.to_string()
+            } else {
+                format_size(file_size)
+            },
+            raw_size: file_size,
             modified: if let Ok(modi) = meta.modified() {
                 let date: DateTime<Utc> = modi.into();
                 format!("{}", date.format("%a %b %e %Y"))
@@ -187,7 +259,7 @@ fn map_data(file: fs::DirEntry, data: &mut Vec<FileEntry>, line_number: String) 
 }
 
 #[cfg(unix)]
-fn format_permissions(metadata: &fs::Metadata) -> String {
+fn format_permissions_rwx(metadata: &fs::Metadata) -> String {
     let mode = metadata.permissions().mode();
     let permissions = mode & 0o777;
     let mut perm_str = String::with_capacity(9);
@@ -210,13 +282,31 @@ fn format_permissions(metadata: &fs::Metadata) -> String {
     perm_str
 }
 
+#[cfg(unix)]
+fn format_permissions_octal(metadata: &fs::Metadata) -> String {
+    let mode = metadata.permissions().mode();
+    let permissions = mode & 0o777;
+    format!("{:03o}", permissions)
+}
+
 #[cfg(windows)]
-fn format_permissions(metadata: &fs::Metadata) -> String {
+fn format_permissions_rwx(metadata: &fs::Metadata) -> String {
     let permissions = metadata.permissions();
 
     if permissions.readonly() {
         "r--r--r--".to_string()
     } else {
         "rw-rw-rw-".to_string()
+    }
+}
+
+#[cfg(windows)]
+fn format_permissions_octal(metadata: &fs::Metadata) -> String {
+    let permissions = metadata.permissions();
+
+    if permissions.readonly() {
+        "444".to_string()
+    } else {
+        "666".to_string()
     }
 }
