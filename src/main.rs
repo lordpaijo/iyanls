@@ -154,12 +154,15 @@ fn main() {
                 args.deep,
                 args.toggle_clock,
             );
+
+            #[cfg(unix)]
             if !tty_available {
                 for file in &files {
                     println!("{}", file.name);
                 }
                 exit(0);
             }
+
             if args.json {
                 println!("{}", serde_json::to_string_pretty(&files).unwrap());
             } else {
