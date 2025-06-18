@@ -42,23 +42,23 @@ $ iyanls | ils [path] [options]
 Examples:
 - List files in the current directory:
   ```sh
-  $ ils
+  $ iyanls | ils
   ```
 - List files in a specific directory:
   ```sh
-  $ ils /path/to/directory
+  $ iyanls | ils /path/to/directory
   ```
 - List files with deep processing:
   ```sh
-  $ ils --deep /path/to/directory
+  $ iyanls | ils --deep /path/to/directory
   ```
 - List files with JSON formatting:
   ```sh
-  $ ils --json /path/to/directory
+  $ iyanls | ils --json /path/to/directory
   ```
-    - List files that match a string:
+- List files that match a string:
   ```sh
-  $ ils --grab string /path/to/directory
+  $ iyanls | ils --grab string /path/to/directory
   ```
 
 See `iyanls --help` for more information.
