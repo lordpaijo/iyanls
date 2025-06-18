@@ -8,7 +8,7 @@ use serde::Serialize;
 #[cfg(unix)]
 use std::os::unix::io::AsRawFd;
 
-use std::{fs, path::PathBuf, process::exit};
+use std::{cmp::Ordering, fs, path::PathBuf, process::exit};
 use strum::Display;
 use tabled::{
     Table, Tabled,
@@ -30,6 +30,22 @@ enum TimeFormat {
     Rfc3339,
     Utf,
     Custom,
+}
+
+#[derive(Debug, Clone, ValueEnum)]
+enum SortOrder {
+    #[value(name = "up-to-date")]
+    UpToDate,
+    #[value(name = "down-to-date")]
+    DownToDate,
+    #[value(name = "largest-size")]
+    LargestSize,
+    #[value(name = "smallest-size")]
+    SmallestSize,
+    #[value(name = "alphabetical-order")]
+    AlphabeticalOrder,
+    #[value(name = "alphabetical-reverse")]
+    AlphabeticalReverse,
 }
 
 #[derive(Debug, Parser)]
@@ -79,15 +95,27 @@ struct Args {
     timezone: String,
     #[arg(long, help = "Toggle clock display", default_value = "false")]
     toggle_clock: bool,
+    #[arg(short = 'U', long, help = "Sort files by newest modified to oldest")]
+    up_to_date: bool,
+    #[arg(short = 'D', long, help = "Sort files by oldest modified to newest")]
+    down_to_date: bool,
+    #[arg(short = 'X', long, help = "Sort files by largest size")]
+    largest_size: bool,
+    #[arg(short = 'S', long, help = "Sort files by smallest size")]
+    smallest_size: bool,
+    #[arg(short = 'A', long, help = "Sort files by alphabetical order")]
+    alphabetical_order: bool,
+    #[arg(short = 'B', long, help = "Sort files by reversed alphabetical order")]
+    alphabetical_reverse: bool,
 }
 
-#[derive(Debug, Display, Serialize)]
+#[derive(Debug, Display, Serialize, Clone)]
 enum EntryType {
     File,
     Dir,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 struct FileEntry {
     #[serde(skip_serializing_if = "String::is_empty")]
     line_number: String,
@@ -96,6 +124,10 @@ struct FileEntry {
     permissions: String,
     size: String,
     modified: String,
+    #[serde(skip)]
+    raw_size: u64,
+    #[serde(skip)]
+    raw_modified: std::time::SystemTime,
 }
 
 #[derive(Debug, Tabled)]
@@ -133,6 +165,10 @@ fn main() {
     let tty_available = unsafe { libc::isatty(std::io::stdout().as_raw_fd()) == 1 };
 
     let args = Args::parse();
+
+    // Determine sort order before moving args.path
+    let sort_order = get_sort_order(&args);
+
     let path = args.path.unwrap_or(PathBuf::from("."));
     let timezone = match args.timezone.parse::<Tz>() {
         Ok(tz) => tz,
@@ -145,18 +181,30 @@ fn main() {
             UTC
         }
     };
+
     if let Ok(exists) = fs::exists(&path) {
         if exists {
-            let files = get_file(
+            let mut files = get_file(
                 &path,
                 &args.grab,
                 !args.no_line_numbers,
                 args.octal_perms,
                 &args.time_format,
                 &timezone,
+                &args.custom_format,
                 args.deep,
                 args.toggle_clock,
             );
+
+            if let Some(order) = sort_order {
+                sort_files(&mut files, &order);
+            }
+
+            if !args.no_line_numbers {
+                for (index, file) in files.iter_mut().enumerate() {
+                    file.line_number = (index + 1).to_string();
+                }
+            }
 
             #[cfg(unix)]
             if !tty_available {
@@ -185,6 +233,62 @@ fn main() {
     } else {
         eprintln!("{}", "Error checking path.".red());
         exit(1);
+    }
+}
+
+fn get_sort_order(args: &Args) -> Option<SortOrder> {
+    let sort_flags = [
+        (args.up_to_date, SortOrder::UpToDate),
+        (args.down_to_date, SortOrder::DownToDate),
+        (args.largest_size, SortOrder::LargestSize),
+        (args.smallest_size, SortOrder::SmallestSize),
+        (args.alphabetical_order, SortOrder::AlphabeticalOrder),
+        (args.alphabetical_reverse, SortOrder::AlphabeticalReverse),
+    ];
+
+    let active_sorts: Vec<_> = sort_flags.iter().filter(|(flag, _)| *flag).collect();
+
+    match active_sorts.len() {
+        0 => None,
+        1 => Some(active_sorts[0].1.clone()),
+        _ => {
+            eprintln!(
+                "{}",
+                "Warning: Multiple sort flags specified. Using the first one found.".yellow()
+            );
+            Some(active_sorts[0].1.clone())
+        }
+    }
+}
+
+fn sort_files(files: &mut Vec<FileEntry>, sort_order: &SortOrder) {
+    match sort_order {
+        SortOrder::UpToDate => {
+            files.sort_by(|a, b| b.raw_modified.cmp(&a.raw_modified));
+        }
+        SortOrder::DownToDate => {
+            files.sort_by(|a, b| a.raw_modified.cmp(&b.raw_modified));
+        }
+        SortOrder::LargestSize => {
+            files.sort_by(|a, b| b.raw_size.cmp(&a.raw_size));
+        }
+        SortOrder::SmallestSize => {
+            files.sort_by(|a, b| a.raw_size.cmp(&b.raw_size));
+        }
+        SortOrder::AlphabeticalOrder => {
+            files.sort_by(|a, b| {
+                let name_a = a.name.trim_end_matches('/');
+                let name_b = b.name.trim_end_matches('/');
+                name_a.to_lowercase().cmp(&name_b.to_lowercase())
+            });
+        }
+        SortOrder::AlphabeticalReverse => {
+            files.sort_by(|a, b| {
+                let name_a = a.name.trim_end_matches('/');
+                let name_b = b.name.trim_end_matches('/');
+                name_b.to_lowercase().cmp(&name_a.to_lowercase())
+            });
+        }
     }
 }
 
@@ -252,6 +356,7 @@ fn format_datetime(
     system_time: std::time::SystemTime,
     time_format: &TimeFormat,
     timezone: &Tz,
+    custom_format: &str,
     toggle_clock: bool,
 ) -> String {
     let datetime_utc: DateTime<Utc> = system_time.into();
@@ -259,32 +364,52 @@ fn format_datetime(
     match time_format {
         TimeFormat::Utc => {
             if toggle_clock {
-                format!("{}", datetime_utc.format("%a %b %e %Y %H:%M:%S"))
+                format!("{}", datetime_utc.format("%a %b %e %Y %H:%M:%S UTC"))
             } else {
                 format!("{}", datetime_utc.format("%a %b %e %Y"))
             }
         }
-        TimeFormat::Unix => datetime_utc.timestamp().to_string(),
+        TimeFormat::Unix => {
+            if toggle_clock {
+                format!(
+                    "{} ({})",
+                    datetime_utc.timestamp(),
+                    datetime_utc.format("%a %b %e %Y %H:%M:%S UTC")
+                )
+            } else {
+                datetime_utc.timestamp().to_string()
+            }
+        }
         TimeFormat::Iso8601 => {
             if toggle_clock {
-                format!("{}", datetime_utc.format("%a-%b-%eT%H:%M:%SZ"))
+                format!("{}", datetime_utc.format("%Y-%m-%dT%H:%M:%SZ"))
             } else {
-                format!("{}", datetime_utc.format("%a %b %e %Y"))
+                format!("{}", datetime_utc.format("%Y-%m-%d"))
             }
         }
-        TimeFormat::Rfc3339 => datetime_utc.to_rfc3339(),
-        TimeFormat::Utf | TimeFormat::Custom => {
+        TimeFormat::Rfc3339 => {
+            if toggle_clock {
+                datetime_utc.to_rfc3339()
+            } else {
+                format!("{}", datetime_utc.format("%Y-%m-%d"))
+            }
+        }
+        TimeFormat::Custom => {
+            let tz_time = datetime_utc.with_timezone(timezone);
+            format!("{}", tz_time.format(custom_format))
+        }
+        TimeFormat::Utf => {
             let tz_time = datetime_utc.with_timezone(timezone);
             if toggle_clock {
-                format!("{}", tz_time.format("%a %b %e %Y %H:%M:%S"))
+                format!("{}", tz_time.format("%a %b %e %Y %H:%M:%S %Z"))
             } else {
                 format!("{}", tz_time.format("%a %b %e %Y"))
             }
         }
-        _ => {
+        TimeFormat::Local => {
             let tz_time = datetime_utc.with_timezone(timezone);
             if toggle_clock {
-                format!("{}", tz_time.format("%a %b %e %Y %H:%M:%S"))
+                format!("{}", tz_time.format("%a %b %e %Y %H:%M:%S %Z"))
             } else {
                 format!("{}", tz_time.format("%a %b %e %Y"))
             }
@@ -358,6 +483,7 @@ fn get_file(
     octal_perms: bool,
     time_format: &TimeFormat,
     timezone: &Tz,
+    custom_format: &str,
     deep: bool,
     toggle_clock: bool,
 ) -> Vec<FileEntry> {
@@ -378,6 +504,7 @@ fn get_file(
                         octal_perms,
                         time_format,
                         timezone,
+                        custom_format,
                         deep,
                         toggle_clock,
                     );
@@ -404,6 +531,7 @@ fn map_data(
     octal_perms: bool,
     time_format: &TimeFormat,
     timezone: &Tz,
+    custom_format: &str,
     deep: bool,
     toggle_clock: bool,
 ) {
@@ -413,11 +541,16 @@ fn map_data(
         } else {
             meta.len()
         };
-        let modified_date = if let Ok(modi) = meta.modified() {
-            format_datetime(modi, time_format, timezone, toggle_clock)
-        } else {
-            String::default()
-        };
+
+        let raw_modified = meta.modified().unwrap_or(std::time::UNIX_EPOCH);
+        let modified_date = format_datetime(
+            raw_modified,
+            time_format,
+            timezone,
+            custom_format,
+            toggle_clock,
+        );
+
         let mut filename = file
             .file_name()
             .into_string()
@@ -425,6 +558,7 @@ fn map_data(
         if meta.is_dir() {
             filename.push('/');
         }
+
         data.push(FileEntry {
             line_number,
             name: filename,
@@ -440,6 +574,8 @@ fn map_data(
             },
             size: format_size(file_size),
             modified: modified_date,
+            raw_size: file_size,
+            raw_modified,
         });
     }
 }
