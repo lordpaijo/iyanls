@@ -8,6 +8,14 @@ license = "MIT"
 repository = "https://github.com/lordpaijo/iyanls"
 documentation = "https://docs.rs/iyanls"
 
+[[bin]]
+name = "iyanls"
+path = "src/main.rs"
+
+[[bin]]
+name = "ils"
+path = "src/main.rs"
+
 [dependencies]
 chrono = { version = "0.4", features = ["serde"] }
 chrono-tz = "0.8"
