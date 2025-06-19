@@ -25,7 +25,7 @@ pub struct Args {
         long,
         help = "Filter files by pattern reversly (won't print filenames that match)"
     )]
-    pub re_grab: Option<String>,
+    pub regrab: Option<String>,
     #[arg(short, long, help = "Format output to JSON")]
     pub json: bool,
     #[arg(alias = "jsx", long, help = "Export JSON output to a file")]
