@@ -63,11 +63,6 @@ pub fn sort_files(files: &mut Vec<FileEntry>, sort_order: &SortOrder) {
                 let is_dir_b = b.name.ends_with('/');
                 is_dir_b.cmp(&is_dir_a)
             });
-            files.sort_by(|a, b| {
-                let is_dir_a = a.name.ends_with('/');
-                let is_dir_b = b.name.ends_with('/');
-                is_dir_a.cmp(&is_dir_b)
-            });
         }
         SortOrder::DirLast => {
             files.sort_by(|a, b| {
