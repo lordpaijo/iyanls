@@ -28,6 +28,8 @@ pub struct Args {
     pub no_line_numbers: bool,
     #[arg(short = 'o', long, help = "Show permissions in octal format")]
     pub octal_perms: bool,
+    #[arg(short = 'u', long, help = "Show permissions in owner format")]
+    pub owner_type: bool,
     #[arg(
         short = 't',
         long,

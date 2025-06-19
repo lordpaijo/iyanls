@@ -31,6 +31,7 @@ fn main() {
                 &args.grab,
                 !args.no_line_numbers,
                 args.octal_perms,
+                args.owner_type,
                 &args.time_format,
                 &timezone,
                 &args.custom_format,

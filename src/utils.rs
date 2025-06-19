@@ -147,3 +147,15 @@ pub fn format_permissions_octal(metadata: &fs::Metadata) -> String {
     let permissions = mode & 0o777;
     format!("{:03o}", permissions)
 }
+
+#[cfg(unix)]
+pub fn format_permissions_owner_type(metadata: &fs::Metadata) -> String {
+    use std::os::unix::fs::MetadataExt;
+    let uid = metadata.uid();
+
+    if uid == 0 {
+        "   Root".to_string()
+    } else {
+        "   User".to_string()
+    }
+}
