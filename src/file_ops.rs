@@ -12,6 +12,7 @@ use crate::utils::{
 pub fn get_file(
     path: &PathBuf,
     pattern: &Option<String>,
+    re_grab_pattern: &Option<String>,
     show_line_numbers: bool,
     octal_perms: bool,
     owner_type: bool,
@@ -26,7 +27,7 @@ pub fn get_file(
         let mut line_number = 1;
         for entry in read_dir {
             if let Ok(file) = entry {
-                if should_include_file(&file, pattern) {
+                if should_include_file(&file, pattern, re_grab_pattern) {
                     map_data(
                         file,
                         &mut data,
@@ -51,11 +52,23 @@ pub fn get_file(
     data
 }
 
-fn should_include_file(file: &fs::DirEntry, pattern: &Option<String>) -> bool {
+fn should_include_file(
+    file: &fs::DirEntry,
+    pattern: &Option<String>,
+    re_grab_pattern: &Option<String>,
+) -> bool {
+    let filename = file.file_name().to_string_lossy().to_lowercase();
+
+    if let Some(exclude_pattern) = re_grab_pattern {
+        if filename.contains(&exclude_pattern.to_lowercase()) {
+            return false;
+        }
+    }
+
     let Some(search_pattern) = pattern else {
         return true;
     };
-    let filename = file.file_name().to_string_lossy().to_lowercase();
+
     filename.contains(&search_pattern.to_lowercase())
 }
 
