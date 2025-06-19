@@ -28,6 +28,10 @@ pub enum SortOrder {
     AlphabeticalOrder,
     #[value(name = "alphabetical-reverse")]
     AlphabeticalReverse,
+    #[value(name = "directory-first")]
+    DirFirst,
+    #[value(name = "directory-last")]
+    DirLast,
 }
 
 #[derive(Debug, Display, Serialize, Clone)]
