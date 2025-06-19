@@ -1,7 +1,6 @@
-use std::{fs, path::PathBuf, process::exit};
-
 use clap::Parser;
 use owo_colors::OwoColorize;
+use std::{fs, path::PathBuf, process::exit};
 
 mod cli;
 mod display;
@@ -14,18 +13,12 @@ use cli::Args;
 use display::{export_json, print_table_from_files};
 use file_ops::get_file;
 use sorting::{get_sort_order, sort_files};
+use std::os::unix::io::AsRawFd;
 use types::FileEntry;
 
-#[cfg(unix)]
-use std::os::unix::io::AsRawFd;
-
 fn main() {
-    #[cfg(unix)]
     let tty_available = unsafe { libc::isatty(std::io::stdout().as_raw_fd()) == 1 };
-
     let args = Args::parse();
-
-    // Determine sort order before moving args.path
     let sort_order = get_sort_order(&args);
 
     let path = args.path.unwrap_or(PathBuf::from("."));
@@ -53,7 +46,6 @@ fn main() {
                 add_line_numbers(&mut files);
             }
 
-            #[cfg(unix)]
             if !tty_available {
                 print_names_only(&files);
                 exit(0);
