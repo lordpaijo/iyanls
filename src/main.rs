@@ -29,7 +29,7 @@ fn main() {
             let mut files = get_file(
                 &path,
                 &args.grab,
-                &args.re_grab,
+                &args.regrab,
                 !args.no_line_numbers,
                 args.octal_perms,
                 args.owner_type,
@@ -55,10 +55,10 @@ fn main() {
 
             if args.json {
                 println!("{}", serde_json::to_string_pretty(&files).unwrap());
-            } else if args.re_grab.is_none() {
+            } else if args.regrab.is_none() {
                 print_table_from_files(&files, &args.grab, !args.no_line_numbers);
             } else {
-                print_table_from_files(&files, &args.re_grab, !args.no_line_numbers);
+                print_table_from_files(&files, &args.regrab, !args.no_line_numbers);
             }
 
             if let Some(export_path) = &args.json_export {
