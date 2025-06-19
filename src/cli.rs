@@ -17,9 +17,15 @@ pub struct Args {
     #[arg(
         short,
         long,
-        help = "Filter files by pattern (like grep - matches filenames containing the pattern)"
+        help = "Filter files by pattern (matches filenames containing the pattern)"
     )]
     pub grab: Option<String>,
+    #[arg(
+        short,
+        long,
+        help = "Filter files by pattern reversly (won't print filenames that match)"
+    )]
+    pub re_grab: Option<String>,
     #[arg(short, long, help = "Format output to JSON")]
     pub json: bool,
     #[arg(alias = "jsx", long, help = "Export JSON output to a file")]
