@@ -5,7 +5,8 @@ use rayon::prelude::*;
 
 use crate::types::{EntryType, FileEntry, TimeFormat};
 use crate::utils::{
-    format_datetime, format_permissions_octal, format_permissions_rwx, format_size,
+    format_datetime, format_permissions_octal, format_permissions_owner_type,
+    format_permissions_rwx, format_size,
 };
 
 pub fn get_file(
@@ -13,6 +14,7 @@ pub fn get_file(
     pattern: &Option<String>,
     show_line_numbers: bool,
     octal_perms: bool,
+    owner_type: bool,
     time_format: &TimeFormat,
     timezone: &Tz,
     custom_format: &str,
@@ -34,6 +36,7 @@ pub fn get_file(
                             String::new()
                         },
                         octal_perms,
+                        owner_type,
                         time_format,
                         timezone,
                         custom_format,
@@ -61,6 +64,7 @@ fn map_data(
     data: &mut Vec<FileEntry>,
     line_number: String,
     octal_perms: bool,
+    owner_type: bool,
     time_format: &TimeFormat,
     timezone: &Tz,
     custom_format: &str,
@@ -101,6 +105,8 @@ fn map_data(
             },
             permissions: if octal_perms {
                 format_permissions_octal(&meta)
+            } else if owner_type {
+                format_permissions_owner_type(&meta)
             } else {
                 format_permissions_rwx(&meta)
             },
