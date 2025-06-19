@@ -7,7 +7,7 @@ My custom build of `ls` in Rust.
 
 ## Features
 - Tabled and colorful output
-- File type (directory / file)
+- File type (directory / file / users)
 - File Permissions (Normal / Octal)
 - File Size (B to OB)
 - Modification Time with toggling
