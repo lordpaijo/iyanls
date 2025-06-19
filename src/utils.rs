@@ -147,23 +147,3 @@ pub fn format_permissions_octal(metadata: &fs::Metadata) -> String {
     let permissions = mode & 0o777;
     format!("{:03o}", permissions)
 }
-
-#[cfg(windows)]
-pub fn format_permissions_rwx(metadata: &fs::Metadata) -> String {
-    let permissions = metadata.permissions();
-    if permissions.readonly() {
-        "r--r--r--".to_string()
-    } else {
-        "rw-rw-rw-".to_string()
-    }
-}
-
-#[cfg(windows)]
-pub fn format_permissions_octal(metadata: &fs::Metadata) -> String {
-    let permissions = metadata.permissions();
-    if permissions.readonly() {
-        "444".to_string()
-    } else {
-        "666".to_string()
-    }
-}
