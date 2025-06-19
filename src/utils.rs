@@ -1,6 +1,6 @@
 use std::fs;
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Local, Utc};
 use chrono_tz::{Tz, UTC};
 use owo_colors::OwoColorize;
 
@@ -55,60 +55,60 @@ pub fn format_datetime(
     custom_format: &str,
     toggle_clock: bool,
 ) -> String {
-    let datetime_utc: DateTime<Utc> = system_time.into();
-
+    let datetime: DateTime<Utc> = system_time.into();
     match time_format {
         TimeFormat::Utc => {
+            let tz_time = datetime.with_timezone(&Utc);
             if toggle_clock {
-                format!("{}", datetime_utc.format("%a %b %e %Y %H:%M:%S UTC"))
+                format!("{}", tz_time.format("%a %b %e %Y %H:%M:%S"))
             } else {
-                format!("{}", datetime_utc.format("%a %b %e %Y"))
+                format!("{}", tz_time.format("%a %b %e %Y"))
+            }
+        }
+        TimeFormat::Utf => {
+            let tz_time = datetime.with_timezone(timezone);
+            if toggle_clock {
+                format!("{}", tz_time.format("%a %b %e %Y %H:%M:%S"))
+            } else {
+                format!("{}", tz_time.format("%a %b %e %Y"))
+            }
+        }
+        TimeFormat::Local => {
+            let tz_time = datetime.with_timezone(&Local);
+            if toggle_clock {
+                format!("{}", tz_time.format("%a %b %e %Y %H:%M:%S"))
+            } else {
+                format!("{}", tz_time.format("%a %b %e %Y"))
             }
         }
         TimeFormat::Unix => {
             if toggle_clock {
                 format!(
                     "{} ({})",
-                    datetime_utc.timestamp(),
-                    datetime_utc.format("%a %b %e %Y %H:%M:%S UTC")
+                    datetime.timestamp(),
+                    datetime.format("%a %b %e %Y %H:%M:%S")
                 )
             } else {
-                datetime_utc.timestamp().to_string()
+                datetime.timestamp().to_string()
             }
         }
         TimeFormat::Iso8601 => {
             if toggle_clock {
-                format!("{}", datetime_utc.format("%Y-%m-%dT%H:%M:%SZ"))
+                format!("{}", datetime.format("%Y-%m-%dT%H:%M:%SZ"))
             } else {
-                format!("{}", datetime_utc.format("%Y-%m-%d"))
+                format!("{}", datetime.format("%Y-%m-%d"))
             }
         }
         TimeFormat::Rfc3339 => {
             if toggle_clock {
-                datetime_utc.to_rfc3339()
+                datetime.to_rfc3339()
             } else {
-                format!("{}", datetime_utc.format("%Y-%m-%d"))
+                format!("{}", datetime.format("%Y-%m-%d"))
             }
         }
         TimeFormat::Custom => {
-            let tz_time = datetime_utc.with_timezone(timezone);
+            let tz_time = datetime.with_timezone(timezone);
             format!("{}", tz_time.format(custom_format))
-        }
-        TimeFormat::Utf => {
-            let tz_time = datetime_utc.with_timezone(timezone);
-            if toggle_clock {
-                format!("{}", tz_time.format("%a %b %e %Y %H:%M:%S %Z"))
-            } else {
-                format!("{}", tz_time.format("%a %b %e %Y"))
-            }
-        }
-        TimeFormat::Local => {
-            let tz_time = datetime_utc.with_timezone(timezone);
-            if toggle_clock {
-                format!("{}", tz_time.format("%a %b %e %Y %H:%M:%S %Z"))
-            } else {
-                format!("{}", tz_time.format("%a %b %e %Y"))
-            }
         }
     }
 }
