@@ -64,4 +64,8 @@ pub struct Args {
     pub alphabetical_order: bool,
     #[arg(short = 'B', long, help = "Sort files by reversed alphabetical order")]
     pub alphabetical_reverse: bool,
+    #[arg(short = 'C', long, help = "Sort files by directory first")]
+    pub dir_first: bool,
+    #[arg(short = 'L', long, help = "Sort files by directory last")]
+    pub dir_last: bool,
 }

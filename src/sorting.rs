@@ -10,6 +10,8 @@ pub fn get_sort_order(args: &Args) -> Option<SortOrder> {
         (args.smallest_size, SortOrder::SmallestSize),
         (args.alphabetical_order, SortOrder::AlphabeticalOrder),
         (args.alphabetical_reverse, SortOrder::AlphabeticalReverse),
+        (args.dir_first, SortOrder::DirFirst),
+        (args.dir_last, SortOrder::DirLast),
     ];
 
     let active_sorts: Vec<_> = sort_flags.iter().filter(|(flag, _)| *flag).collect();
@@ -53,6 +55,25 @@ pub fn sort_files(files: &mut Vec<FileEntry>, sort_order: &SortOrder) {
                 let name_a = a.name.trim_end_matches('/');
                 let name_b = b.name.trim_end_matches('/');
                 name_b.to_lowercase().cmp(&name_a.to_lowercase())
+            });
+        }
+        SortOrder::DirFirst => {
+            files.sort_by(|a, b| {
+                let is_dir_a = a.name.ends_with('/');
+                let is_dir_b = b.name.ends_with('/');
+                is_dir_b.cmp(&is_dir_a)
+            });
+            files.sort_by(|a, b| {
+                let is_dir_a = a.name.ends_with('/');
+                let is_dir_b = b.name.ends_with('/');
+                is_dir_a.cmp(&is_dir_b)
+            });
+        }
+        SortOrder::DirLast => {
+            files.sort_by(|a, b| {
+                let is_dir_a = a.name.ends_with('/');
+                let is_dir_b = b.name.ends_with('/');
+                is_dir_a.cmp(&is_dir_b)
             });
         }
     }
