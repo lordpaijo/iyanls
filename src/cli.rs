@@ -36,6 +36,10 @@ pub struct Args {
     pub octal_perms: bool,
     #[arg(short = 'u', long, help = "Show permissions in owner format")]
     pub owner_type: bool,
+    #[arg(short, long, help = "Include files or directories")]
+    pub include: Option<Vec<String>>,
+    #[arg(short = 'x', long, help = "Exclude files or directories")]
+    pub exclude: Option<Vec<String>>,
     #[arg(
         short = 't',
         long,
