@@ -30,6 +30,8 @@ fn main() {
                 &path,
                 &args.grab,
                 &args.regrab,
+                &args.include,
+                &args.exclude,
                 !args.no_line_numbers,
                 args.octal_perms,
                 args.owner_type,
