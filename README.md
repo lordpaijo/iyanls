@@ -1,14 +1,18 @@
 # iyanls
 My custom build of `ls` in Rust.
 
-(Inspired and based on: [https://youtu.be/5UA9UWWAagc?si=nceQeo-33Cpjpb-e](https://youtu.be/5UA9UWWAagc?si=nceQeo-33Cpjpb-e))
-
+[![Rust](https://img.shields.io/badge/language-Rust-orange)](https://www.rust-lang.org/)
+[![Crates.io](https://img.shields.io/crates/v/iyanls)](https://crates.io/crates/iyanls)
+[![GitHub stars](https://img.shields.io/github/stars/lordpaijo/iyanls)](https://github.com/lordpaijo/iyanls/stargazers)
+[![GitHub issues](https://img.shields.io/github/issues/lordpaijo/iyanls)](https://github.com/lordpaijo/iyanls/issues)
+[![GitHub forks](https://img.shields.io/github/forks/lordpaijo/iyanls)](https://github.com/lordpaijo/iyanls/network/members)
+[![GitHub commits](https://img.shields.io/github/commit-activity/m/lordpaijo/iyanls)](https://github.com/lordpaijo/iyanls/commits/main)
+[![MIT License](https://img.shields.io/github/license/lordpaijo/iyanls)](https://github.com/lordpaijo/iyanls/blob/main/LICENSE)
 ![](https://github.com/lordpaijo/iyanls/blob/main/ss00.png)
-
 ## Features
 - Tabled and colorful output
-- File type (directory / file / users)
-- File Permissions (Normal / Octal)
+- File type (directory/file)
+- File Permissions (Normal / Octal / Users)
 - File Size (B to OB)
 - Modification Time with toggling
 - Grabbing files by strings
@@ -62,3 +66,7 @@ Examples:
   ```
 
 See `iyanls --help` for more information.
+
+---
+
+Inspiration: [https://youtu.be/5UA9UWWAagc?si=nceQeo-33Cpjpb-e](https://youtu.be/5UA9UWWAagc?si=nceQeo-33Cpjpb-e)
