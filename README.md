@@ -9,6 +9,7 @@ My custom build of `ls` in Rust.
 [![GitHub commits](https://img.shields.io/github/commit-activity/m/lordpaijo/iyanls)](https://github.com/lordpaijo/iyanls/commits/main)
 [![MIT License](https://img.shields.io/github/license/lordpaijo/iyanls)](https://github.com/lordpaijo/iyanls/blob/main/LICENSE)
 ![](https://github.com/lordpaijo/iyanls/blob/main/ss00.png)
+![](https://github.com/lordpaijo/iyanls/blob/main/ss01.png)
 ## Features
 - Tabled and colorful output
 - File type (directory/file)
