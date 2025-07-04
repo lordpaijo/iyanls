@@ -1,4 +1,4 @@
-use std::{fs, path::PathBuf};
+use std::{env, fs, path::PathBuf};
 
 use chrono_tz::Tz;
 use rayon::prelude::*;
@@ -23,6 +23,7 @@ pub fn get_files_from_directories(
     custom_format: &str,
     deep: bool,
     toggle_clock: bool,
+    show_current_dir: bool,
 ) -> Vec<FileEntry> {
     let mut all_entries = Vec::new();
     let mut directories_to_scan = Vec::new();
@@ -64,13 +65,8 @@ pub fn get_files_from_directories(
             custom_format,
             deep,
             toggle_clock,
+            show_current_dir,
         );
-
-        if include_dirs.is_some() && !include_dirs.as_ref().unwrap().is_empty() {
-            for entry in &mut dir_entries {
-                entry.name = format!("{}/{}", dir_path.display(), entry.name);
-            }
-        }
 
         all_entries.extend(dir_entries);
     }
@@ -90,10 +86,37 @@ pub fn get_file_from_single_directory(
     custom_format: &str,
     deep: bool,
     toggle_clock: bool,
+    show_current_dir: bool,
 ) -> Vec<FileEntry> {
     let mut data = Vec::new();
+    let mut line_number = 1;
+
+    // Add current directory entry if requested
+    if show_current_dir {
+        if let Ok(current_dir) = env::current_dir() {
+            let current_dir_entry = create_current_dir_entry(
+                &current_dir,
+                if show_line_numbers {
+                    line_number.to_string()
+                } else {
+                    String::new()
+                },
+                octal_perms,
+                owner_type,
+                time_format,
+                timezone,
+                custom_format,
+                deep,
+                toggle_clock,
+            );
+            if let Some(entry) = current_dir_entry {
+                data.push(entry);
+                line_number += 1;
+            }
+        }
+    }
+
     if let Ok(read_dir) = fs::read_dir(path) {
-        let mut line_number = 1;
         for entry in read_dir {
             if let Ok(file) = entry {
                 if should_include_file(&file, pattern, re_grab_pattern) {
@@ -135,6 +158,7 @@ pub fn get_file(
     custom_format: &str,
     deep: bool,
     toggle_clock: bool,
+    show_current_dir: bool,
 ) -> Vec<FileEntry> {
     let mut all_entries = Vec::new();
     let mut directories_to_scan = Vec::new();
@@ -168,15 +192,16 @@ pub fn get_file(
             custom_format,
             deep,
             toggle_clock,
+            show_current_dir,
         );
 
         let scanning_multiple = include_dirs.is_some() && include_dirs.as_ref().unwrap().len() > 0;
 
         if scanning_multiple {
             for entry in &mut dir_entries {
-                if dir_path != *path {
-                    entry.name = format!("{}/{}", dir_path.display(), entry.name);
-                }
+                let dir_str = dir_path.to_string_lossy();
+                let clean_dir = dir_str.trim_end_matches('/').trim_end_matches('\\');
+                entry.name = format!("{}/{}", clean_dir, entry.name);
             }
         }
 
@@ -199,10 +224,37 @@ fn scan_single_directory(
     custom_format: &str,
     deep: bool,
     toggle_clock: bool,
+    show_current_dir: bool,
 ) -> Vec<FileEntry> {
     let mut data = Vec::new();
+    let mut line_number = 1;
+
+    // Add current directory entry if requested
+    if show_current_dir {
+        if let Ok(current_dir) = env::current_dir() {
+            let current_dir_entry = create_current_dir_entry(
+                &current_dir,
+                if show_line_numbers {
+                    line_number.to_string()
+                } else {
+                    String::new()
+                },
+                octal_perms,
+                owner_type,
+                time_format,
+                timezone,
+                custom_format,
+                deep,
+                toggle_clock,
+            );
+            if let Some(entry) = current_dir_entry {
+                data.push(entry);
+                line_number += 1;
+            }
+        }
+    }
+
     if let Ok(read_dir) = fs::read_dir(path) {
-        let mut line_number = 1;
         for entry in read_dir {
             if let Ok(file) = entry {
                 if should_include_file(&file, pattern, re_grab_pattern)
@@ -230,6 +282,54 @@ fn scan_single_directory(
         }
     }
     data
+}
+
+fn create_current_dir_entry(
+    current_dir: &PathBuf,
+    line_number: String,
+    octal_perms: bool,
+    owner_type: bool,
+    time_format: &TimeFormat,
+    timezone: &Tz,
+    custom_format: &str,
+    deep: bool,
+    toggle_clock: bool,
+) -> Option<FileEntry> {
+    if let Ok(meta) = fs::metadata(current_dir) {
+        let file_size = if deep {
+            get_dir_size(current_dir)
+        } else {
+            meta.len()
+        };
+
+        let raw_modified = meta.modified().unwrap_or(std::time::UNIX_EPOCH);
+        let modified_date = format_datetime(
+            raw_modified,
+            time_format,
+            timezone,
+            custom_format,
+            toggle_clock,
+        );
+
+        Some(FileEntry {
+            line_number,
+            name: format!("./"),
+            e_type: EntryType::Dir,
+            permissions: if octal_perms {
+                format_permissions_octal(&meta)
+            } else if owner_type {
+                format_permissions_owner_type(&meta)
+            } else {
+                format_permissions_rwx(&meta)
+            },
+            size: format_size(file_size),
+            modified: modified_date,
+            raw_size: file_size,
+            raw_modified,
+        })
+    } else {
+        None
+    }
 }
 
 fn should_exclude_file(file: &fs::DirEntry, exclude_patterns: &Option<Vec<String>>) -> bool {
