@@ -40,6 +40,7 @@ fn main() {
                 &args.custom_format,
                 args.deep,
                 args.toggle_clock,
+                args.show_current_dir,
             );
 
             if let Some(order) = sort_order {
