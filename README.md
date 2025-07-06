@@ -1,5 +1,4 @@
 # iyanls
-Iyanls is an open-source, powerful and flexible alternative tool to GNU Core Utilities `ls`. Written on top of the Rust programming language, it offers a wide range of features and robust power for a searching tool.
 
 [![Rust](https://img.shields.io/badge/language-Rust-orange)](https://www.rust-lang.org/)
 [![Crates.io](https://img.shields.io/crates/v/iyanls)](https://crates.io/crates/iyanls)
@@ -8,6 +7,9 @@ Iyanls is an open-source, powerful and flexible alternative tool to GNU Core Uti
 [![GitHub forks](https://img.shields.io/github/forks/lordpaijo/iyanls)](https://github.com/lordpaijo/iyanls/network/members)
 [![GitHub commits](https://img.shields.io/github/commit-activity/m/lordpaijo/iyanls)](https://github.com/lordpaijo/iyanls/commits/main)
 [![MIT License](https://img.shields.io/github/license/lordpaijo/iyanls)](https://github.com/lordpaijo/iyanls/blob/main/LICENSE)
+
+Iyanls is an open-source, powerful and flexible alternative tool to GNU Core Utilities `ls`. Written on top of the Rust programming language, it offers a wide range of features and robust power for a searching tool.
+
 ![](https://github.com/lordpaijo/iyanls/blob/main/ss00.png)
 ![](https://github.com/lordpaijo/iyanls/blob/main/ss01.png)
 ## Features
