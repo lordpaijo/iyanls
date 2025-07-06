@@ -34,13 +34,13 @@ fn main() {
                 &args.exclude,
                 !args.no_line_numbers,
                 args.octal_perms,
-                args.owner_type,
+                args.owner_perms,
                 &args.time_format,
                 &timezone,
-                &args.custom_format,
+                &args.custom_time_format,
                 args.deep,
                 args.toggle_clock,
-                args.show_current_dir,
+                args.show_cwd,
             );
 
             if let Some(order) = sort_order {

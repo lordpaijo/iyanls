@@ -1,5 +1,5 @@
 # iyanls
-My custom build of `ls` in Rust.
+Iyanls is an open-source, powerful and flexible alternative tool to GNU Core Utilities `ls`. Written on top of the Rust programming language, it offers a wide range of features and robust power for a searching tool.
 
 [![Rust](https://img.shields.io/badge/language-Rust-orange)](https://www.rust-lang.org/)
 [![Crates.io](https://img.shields.io/crates/v/iyanls)](https://crates.io/crates/iyanls)
@@ -66,7 +66,7 @@ Examples:
   $ iyanls | ils --grab string /path/to/directory
   ```
 
-See `iyanls --help` for more information.
+See `iyanls -h` for more information, or read [the documentation](https://github.com/lordpaijo/iyanls/blob/main/docs.md).
 
 ---
 

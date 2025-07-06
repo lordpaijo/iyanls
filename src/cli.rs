@@ -35,14 +35,14 @@ pub struct Args {
     #[arg(short = 'o', long, help = "Show permissions in octal format")]
     pub octal_perms: bool,
     #[arg(short = 'u', long, help = "Show permissions in owner format")]
-    pub owner_type: bool,
+    pub owner_perms: bool,
     #[arg(
         short = 'a',
         long,
         help = "Show current directory metadata",
         default_value = "false"
     )]
-    pub show_current_dir: bool,
+    pub show_cwd: bool,
     #[arg(short, long, help = "Include files or directories")]
     pub include: Option<Vec<String>>,
     #[arg(short = 'x', long, help = "Exclude files or directories")]
@@ -60,7 +60,7 @@ pub struct Args {
         help = "Custom time format string (used with --time-format=custom)",
         default_value = "%Y-%m-%d %H:%M:%S %Z"
     )]
-    pub custom_format: String,
+    pub custom_time_format: String,
     #[arg(
         long,
         help = "Timezone for time display (e.g., US/Eastern, Europe/London, Asia/Tokyo)",
