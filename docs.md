@@ -9,7 +9,7 @@ To install iyanls, you can use the following command:
 $ cargo install iyanls
 ```
 
-This will install the iyanls package which has two binariesL `iyanls` and `ils`. Both are the same, and the two work as an alias to one another.
+This will install the iyanls package, which has two binaries: `iyanls` and `ils`. Both are the same, and the two work as an alias to one another.
 
 ## Usage
 Once installed, you can use iyanls by running the following command:
@@ -19,7 +19,7 @@ $ iyanls [options] [path]
 ```
 
 ## Features
-Iyanls has many in-built features in a form of CLI arguments. These features are designed to enhance the user experience and provide more control over the output.
+Iyanls has many in-built features in the form of CLI arguments. These features are designed to enhance the user experience and provide more control over the output.
 
 ### Help
 The help page provides information about the available options and their usage. To get help on the available options, you can use the following command:
@@ -51,7 +51,7 @@ Warning: Deep processing can be resource-intensive and may take a long time to c
 ---
 
 ### Grab
-Grab is a feature mimicing the `grep` command. It shows you files and directories that match a specific string or pattern. To use grab, you can use the following command:
+Grab is a feature mimicking the `grep` command. It shows you files and directories that match a specific string or pattern. To use grab, you can use the following command:
 
 ```bash
 $ iyanls [ -g | --grab ] [pattern] [path]
@@ -98,7 +98,7 @@ By default, line numbers are always enabled.
 ---
 
 ### Permissions Metadata Format
-There are three available types of permissions format:
+There are three available types of permission formats:
 
 1. **Symbolic** (default)
 2. **Octal**
@@ -128,7 +128,7 @@ $ iyanls [ -a | --show-cwd ] [path]
 ---
 
 ### Include Files or Directories
-If you want to read other files or directories metadata outside or inside your current working directory, you can use the following command:
+If you want to read other files or directories' metadata outside or inside your current working directory, you can use the following command:
 
 ```bash
 $ iyanls [ -i | --include ] [pattern] [path]
@@ -137,10 +137,10 @@ $ iyanls [ -i | --include ] [pattern] [path]
 ---
 
 ### Exclude Files or Directories
-If you want to exclude files or directories metadata outside or inside your current working directory, you can use the following command:
+If you want to exclude files or directories' metadata outside or inside your current working directory, you can use the following command:
 
 ```bash
-$ iyanls [ -e | --exclude ] [pattern] [path]
+$ iyanls [ -x | --exclude ] [pattern] [path]
 ```
 
 This works the same way as re-grab. It's just more formal.
@@ -148,7 +148,7 @@ This works the same way as re-grab. It's just more formal.
 ---
 
 ### Time Formats
-You can specify your time format (utc, local, unix, iso8601, rfc3339, utf, custom), by using the following command:
+You can specify your time format (UTC, local, UNIX, ISO8601, RFC3339, UTF, custom) by using the following command:
 
 ```bash
 $ iyanls [ -t | --time-format ] [format] [path]
