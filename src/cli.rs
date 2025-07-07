@@ -79,4 +79,6 @@ pub struct Args {
     pub dir_first: bool,
     #[arg(short = 'L', long, help = "Sort files by directory last")]
     pub dir_last: bool,
+    #[arg(long, help = "Print documentation")]
+    pub print_docs: bool,
 }

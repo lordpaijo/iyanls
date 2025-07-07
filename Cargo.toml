@@ -27,6 +27,7 @@ strum = { version = "0.27", features = ["derive"] }
 strum_macros = "0.27"
 tabled = "0.20.0"
 rayon = "1.10.0"
+termimad = "0.33.0"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

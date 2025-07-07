@@ -1,6 +1,7 @@
 use clap::Parser;
 use owo_colors::OwoColorize;
 use std::{fs, path::PathBuf, process::exit};
+use termimad::MadSkin;
 
 mod cli;
 mod display;
@@ -16,6 +17,8 @@ use sorting::{get_sort_order, sort_files};
 use std::os::unix::io::AsRawFd;
 use types::FileEntry;
 
+const DOCS_MD: &str = include_str!("../docs.md");
+
 fn main() {
     let tty_available = unsafe { libc::isatty(std::io::stdout().as_raw_fd()) == 1 };
     let args = Args::parse();
@@ -23,6 +26,12 @@ fn main() {
 
     let path = args.path.unwrap_or(PathBuf::from("."));
     let timezone = utils::parse_timezone(&args.timezone);
+
+    if args.print_docs {
+        let skin = MadSkin::default_dark();
+        skin.print_text(DOCS_MD);
+        exit(0);
+    }
 
     if let Ok(exists) = fs::exists(&path) {
         if exists {
