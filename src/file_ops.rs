@@ -53,7 +53,7 @@ pub fn get_files_from_directories(
     }
 
     for dir_path in directories_to_scan {
-        let mut dir_entries = get_file_from_single_directory(
+        let dir_entries = get_file_from_single_directory(
             &dir_path,
             pattern,
             re_grab_pattern,
