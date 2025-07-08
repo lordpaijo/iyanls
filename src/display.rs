@@ -1,4 +1,5 @@
-use std::io::{self};
+use std::io::{self, BufWriter, Write};
+
 use std::{fs, path::PathBuf, process::exit};
 
 use owo_colors::OwoColorize;
@@ -82,7 +83,7 @@ fn print_styled_table(mut table: Table, has_line_numbers: bool) {
 
     table.modify(Rows::first(), Color::FG_BRIGHT_GREEN);
     let stdout = io::stdout();
-    let mut stdout_lock = stdout.lock();
-    writeln!(stdout_lock, "{}", table).unwrap();
-    stdout_lock.flush().unwrap();
+    let mut w = BufWriter::new(stdout.lock());
+    writeln!(w, "{}", table).unwrap();
+    w.flush().unwrap();
 }
