@@ -1,4 +1,3 @@
-use chrono_tz::Tz;
 use serde::Serialize;
 use strum::Display;
 use tabled::Tabled;
@@ -53,13 +52,6 @@ pub struct FileEntry {
     pub raw_size: u64,
     #[serde(skip)]
     pub raw_modified: std::time::SystemTime,
-}
-
-pub struct FileMetadata {
-    pub size: u64,
-    pub modified: std::time::SystemTime,
-    pub is_dir: bool,
-    pub metadata: std::fs::Metadata,
 }
 
 #[derive(Debug, Tabled)]
