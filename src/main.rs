@@ -29,7 +29,6 @@ fn main() {
             let mut files = get_file(
                 &path,
                 &args.grab,
-                &args.regrab,
                 &args.include,
                 &args.exclude,
                 !args.no_line_numbers,
@@ -58,10 +57,8 @@ fn main() {
 
             if args.json {
                 println!("{}", serde_json::to_string_pretty(&files).unwrap());
-            } else if args.regrab.is_none() {
-                print_table_from_files(&files, &args.grab, !args.no_line_numbers);
             } else {
-                print_table_from_files(&files, &args.regrab, !args.no_line_numbers);
+                print_table_from_files(&files, &args.grab, !args.no_line_numbers);
             }
 
             if let Some(export_path) = &args.json_export {

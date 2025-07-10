@@ -12,7 +12,6 @@ use crate::utils::{
 pub fn get_file(
     path: &PathBuf,
     pattern: &Option<String>,
-    re_grab_pattern: &Option<String>,
     include_dirs: &Option<Vec<String>>,
     exclude_dirs: &Option<Vec<String>>,
     show_line_numbers: bool,
@@ -47,7 +46,6 @@ pub fn get_file(
         let mut dir_entries = scan_single_directory(
             &dir_path,
             pattern,
-            re_grab_pattern,
             exclude_dirs,
             show_line_numbers,
             octal_perms,
@@ -79,7 +77,6 @@ pub fn get_file(
 fn scan_single_directory(
     path: &PathBuf,
     pattern: &Option<String>,
-    re_grab_pattern: &Option<String>,
     exclude_patterns: &Option<Vec<String>>,
     show_line_numbers: bool,
     octal_perms: bool,
@@ -122,7 +119,7 @@ fn scan_single_directory(
     if let Ok(read_dir) = fs::read_dir(path) {
         for entry in read_dir {
             if let Ok(file) = entry {
-                if should_include_file(&file, pattern, re_grab_pattern)
+                if should_include_file(&file, pattern)
                     && !should_exclude_file(&file, exclude_patterns)
                 {
                     map_data(
@@ -270,18 +267,8 @@ fn map_data(
     }
 }
 
-fn should_include_file(
-    file: &fs::DirEntry,
-    pattern: &Option<String>,
-    re_grab_pattern: &Option<String>,
-) -> bool {
+fn should_include_file(file: &fs::DirEntry, pattern: &Option<String>) -> bool {
     let filename = file.file_name().to_string_lossy().to_lowercase();
-
-    if let Some(exclude_pattern) = re_grab_pattern {
-        if filename.contains(&exclude_pattern.to_lowercase()) {
-            return false;
-        }
-    }
 
     let Some(search_pattern) = pattern else {
         return true;

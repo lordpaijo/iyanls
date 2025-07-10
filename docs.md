@@ -59,15 +59,6 @@ $ iyanls [ -g | --grab ] [pattern] [path]
 
 ---
 
-### Re-Grab
-Re-Grab is the opposite of Grab. Instead of showing the files and directories that match the pattern, it shows the files and directories that do not match the pattern. To use re-grab, you can use the following command:
-
-```bash
-$ iyanls [ -r | --re-grab ] [pattern] [path]
-```
-
----
-
 ### JSON Formatting
 JSON Formatting allows iyanls to output the results in a JSON format. To enable json formatting, you can use the following command:
 
@@ -142,8 +133,6 @@ If you want to exclude files or directories' metadata outside or inside your cur
 ```bash
 $ iyanls [ -x | --exclude ] [pattern] [path]
 ```
-
-This works the same way as re-grab. It's just more formal.
 
 ---
 
