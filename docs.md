@@ -5,7 +5,7 @@ Iyanls is an open-source, powerful and flexible alternative tool to GNU Core Uti
 ## Installation
 To install iyanls, you can use the following command:
 
-```bash
+```
 $ cargo install iyanls
 ```
 
@@ -14,7 +14,7 @@ This will install the iyanls package, which has two binaries: `iyanls` and `ils`
 ## Usage
 Once installed, you can use iyanls by running the following command:
 
-```bash
+```
 $ iyanls [options] [path]
 ```
 
@@ -24,7 +24,7 @@ Iyanls has many in-built features in the form of CLI arguments. These features a
 ### Help
 The help page provides information about the available options and their usage. To get help on the available options, you can use the following command:
 
-```bash
+```
 $ iyanls [ -h | --help ]
 ```
 
@@ -33,7 +33,7 @@ $ iyanls [ -h | --help ]
 ### Version
 Version page helps you know what version of iyanls you are using. To get the version of iyanls, you can use the following command:
 
-```bash
+```
 $ iyanls [ -V | --version ]
 ```
 
@@ -42,7 +42,7 @@ $ iyanls [ -V | --version ]
 ### Deep Processing
 Deep processing allows iyanls to process files and directories recursively and show their detailed size. To enable deep processing, you can use the following command:
 
-```bash
+```
 $ iyanls [ -d | --deep ] [path]
 ```
 
@@ -53,7 +53,7 @@ Warning: Deep processing can be resource-intensive and may take a long time to c
 ### Grab
 Grab is a feature mimicking the `grep` command. It shows you files and directories that match a specific string or pattern. To use grab, you can use the following command:
 
-```bash
+```
 $ iyanls [ -g | --grab ] [pattern] [path]
 ```
 
@@ -62,7 +62,7 @@ $ iyanls [ -g | --grab ] [pattern] [path]
 ### JSON Formatting
 JSON Formatting allows iyanls to output the results in a JSON format. To enable json formatting, you can use the following command:
 
-```bash
+```
 $ iyanls [ -j | --json ] [path]
 ```
 
@@ -71,7 +71,7 @@ $ iyanls [ -j | --json ] [path]
 ### JSON Exporting
 JSON Exporting allows iyanls to export the results in a JSON format to a file. To enable json exporting, you can use the following command:
 
-```bash
+```
 $ iyanls [ --jsx | --json-export ] [path]
 ```
 
@@ -80,7 +80,7 @@ $ iyanls [ --jsx | --json-export ] [path]
 ### Line Numbers Toggling
 You can toggle line numbers off using the following command:
 
-```bash
+```
 $ iyanls [ -n | --no-line-numbers ] [path]
 ```
 
@@ -98,12 +98,12 @@ There are three available types of permission formats:
 The default format is Symbolic. To use the other two, you can use the following commands:
 
 Octal Permissions:
-```bash
+```
 $ iyanls [ -o | --octal-perms ] [path]
 ```
 
 User Permissions:
-```bash
+```
 $ iyanls [ -u | --owner-perms ] [path]
 ```
 
@@ -112,7 +112,7 @@ $ iyanls [ -u | --owner-perms ] [path]
 ### Print Current Working Directory Metadata
 To print your current working directory metadata, you can use the following command:
 
-```bash
+```
 $ iyanls [ -a | --show-cwd ] [path]
 ```
 
@@ -121,7 +121,7 @@ $ iyanls [ -a | --show-cwd ] [path]
 ### Include Files or Directories
 If you want to read other files or directories' metadata outside or inside your current working directory, you can use the following command:
 
-```bash
+```
 $ iyanls [ -i | --include ] [pattern] [path]
 ```
 
@@ -130,7 +130,7 @@ $ iyanls [ -i | --include ] [pattern] [path]
 ### Exclude Files or Directories
 If you want to exclude files or directories' metadata outside or inside your current working directory, you can use the following command:
 
-```bash
+```
 $ iyanls [ -x | --exclude ] [pattern] [path]
 ```
 
@@ -139,7 +139,7 @@ $ iyanls [ -x | --exclude ] [pattern] [path]
 ### Time Formats
 You can specify your time format (UTC, local, UNIX, ISO8601, RFC3339, UTF, custom) by using the following command:
 
-```bash
+```
 $ iyanls [ -t | --time-format ] [format] [path]
 ```
 
@@ -148,7 +148,7 @@ $ iyanls [ -t | --time-format ] [format] [path]
 ### Custom Time Format
 You can specify your custom time format by using the following command:
 
-```bash
+```
 $ iyanls --custom-time-format [format] [path]
 ```
 
@@ -157,7 +157,7 @@ $ iyanls --custom-time-format [format] [path]
 ### Timezone
 You can specify your timezone by using the following command:
 
-```bash
+```
 $ iyanls --timezone [timezone] [path]
 ```
 
@@ -166,7 +166,7 @@ $ iyanls --timezone [timezone] [path]
 ### Toggling Clock
 To toggle the clock on or off, you can use the following command:
 
-```bash
+```
 $ iyanls --toggle-clock [path]
 ```
 
@@ -179,12 +179,12 @@ There are many file sortings in Iyanls, and you can choose which one you want to
 You can choose between sorting by newest or oldest using these commands:
 
 Newest:
-```bash
+```
 $ iyanls [ -U | up-to-date ] [path]
 ```
 
 Oldest:
-```bash
+```
 $ iyanls [ -D | down-to-date ] [path]
 ```
 
@@ -194,12 +194,12 @@ $ iyanls [ -D | down-to-date ] [path]
 You can choose between sorting by the largest or the smallest in size using these commands:
 
 largest:
-```bash
+```
 $ iyanls [ -X | --largest-size ] [path]
 ```
 
 smallest:
-```bash
+```
 $ iyanls [ -S | --smallest-size ] [path]
 ```
 
@@ -209,12 +209,12 @@ $ iyanls [ -S | --smallest-size ] [path]
 You can choose between sorting by alphabetical order or reverse alphabetical order using these commands:
 
 Alphabetical:
-```bash
+```
 $ iyanls [ -A | --alphabetical-order ] [path]
 ```
 
 Reverse Alphabetical:
-```bash
+```
 $ iyanls [ -B | --alphabetical-reverse ] [path]
 ```
 
@@ -224,11 +224,11 @@ $ iyanls [ -B | --alphabetical-reverse ] [path]
 You can choose between sorting by directories first or last using these commands:
 
 Directories First:
-```bash
+```
 $ iyanls [ -C | --dir-first ] [path]
 ```
 
 Directories Last:
-```bash
+```
 $ iyanls [ -L | --dir-last ] [path]
 ```
