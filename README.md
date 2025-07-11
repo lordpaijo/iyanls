@@ -30,7 +30,7 @@ Iyanls is an open-source, powerful and flexible alternative tool to GNU Core Uti
 $ cargo install iyanls
 ```
 
-Or use the executable files from [assets](https://github.com/lordpaijo/iyanls/releases).
+Make sure to add `.cargo/bin` to your PATH environment variable.
 
 ## Build from source
 ```sh
@@ -42,29 +42,29 @@ $ cargo build --release
 Make sure to add the `target/release` directory to your PATH environment variable.
 
 ## Usage
-```sh
+```
 $ iyanls | ils [path] [options]
 ```
 
 Examples:
 - List files in the current directory:
-  ```sh
+  ```
   $ iyanls | ils
   ```
 - List files in a specific directory:
-  ```sh
+  ```
   $ iyanls | ils /path/to/directory
   ```
 - List files with deep processing:
-  ```sh
+  ```
   $ iyanls | ils --deep /path/to/directory
   ```
 - List files with JSON formatting:
-  ```sh
+  ```
   $ iyanls | ils --json /path/to/directory
   ```
 - List files that match a string:
-  ```sh
+  ```
   $ iyanls | ils --grab string /path/to/directory
   ```
 
